@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天气预报</title>
+    <link rel="stylesheet" href="static/plugins/bootstrap-5.3.3-dist/css/bootstrap.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1976D2;
+            --secondary-color: #D32F2F;
+            --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            --background-gradient: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+        }
+
+        /* body {
+            background: var(--background-gradient);
+            font-family: 'Roboto', 'Noto Sans SC', sans-serif;
+            line-height: 1.6;
+            color: #333;
+        } 
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }*/
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        /* 页面主体容器 */
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        /* 页面标题样式 */
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        /* 顶部栏样式 */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #000000;
+            color: #fff;
+            padding: 10px 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .weather-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .weather-card {
+            display: flex;
+            flex-direction: column;
+            border-radius: 1px; /* 稍微圆润的矩形 */
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            color: rgb(255, 255, 255);
+            background: linear-gradient(to bottom right, rgba(33, 150, 243, 0.2), rgba(33, 203, 243, 02));  /* 柔和渐变背景 */
+            min-width: 150px; /* 调整最小宽度 */
+            padding: 1rem; /* 减少内边距 */
+        }
+
+        .weather-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(255, 255, 255, 0.3);
+        }
+
+        .weather-card .day-section,
+        .weather-card .night-section {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .weather-icon {
+            font-size: 3rem;
+            z-index: 2;
+        }
+
+        .temp {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .low {
+            color: #1976D2;
+        }
+
+        .high {
+            color: #D32F2F;
+        }
+        /* AI 对话框样式 */
+        .chat-container {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            height: 400px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            flex-direction: column;
+            z-index: 1000;
+        }
+
+        .chat-container header {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            font-size: 18px;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-container header .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .chat-container .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+
+        .chat-container .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 80%;
+        }
+
+        .chat-container .user-message {
+            background-color: #e0f7fa;
+            align-self: flex-start;
+        }
+
+        .chat-container .bot-message {
+            background-color: #e1bee7;
+            align-self: flex-end;
+        }
+
+        .chat-container .input-container {
+            display: flex;
+            padding: 10px;
+            background-color: #fff;
+            border-top: 1px solid #ddd;
+        }
+
+        .chat-container #userInput {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .chat-container button {
+            padding: 10px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        .chat-container button:hover {
+            background-color: #0056b3;
+        }
+
+        /* 打开 AI 对话框的按钮 */
+        .chat-toggle-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            background-color: #007bff;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .chat-toggle-btn:hover {
+            background-color: #0056b3;
+        }
+        /* 用户中心样式 */
+        .user-profile {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .user-profile img {
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            margin-right: 10px;
+        }
+
+        .user-profile h5 {
+            margin: 0;
+            font-size: 1.2rem;
+            /* color: #0051ff; 将颜色设置为蓝色 */
+        }
+
+        .user-profile p {
+            margin: 0;
+            color: #777;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .action-button {
+            padding: 10px 15px;
+            background-color: #000000;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .action-button:hover {
+            background-color: #002aff;
+        }
+
+        /* 动画效果 */
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        /* 地图容器 */
+        #map-container {
+            width: 600px;
+            height: 400px;
+            border: 2px solid #ddd;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* 信息展示框 */
+        .info-box {
+            width: 600px;
+            padding: 15px;
+            background: white;
+            border: 1px solid #ccc;
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        /* 信息框内的标题 */
+        .info-box h3 {
+            margin-top: 0;
+            font-size: 20px;
+            color: #333;
+        }
+
+        /* 信息框内的文本 */
+        .info-box p {
+            margin: 5px 0;
+            color: #666;
+        }
+        /* 校区切换横条样式 */
+        .campus-switcher {
+            display: inline-flex;
+            background-color: #e0e0e0;
+            border-radius: 8px;
+            padding: 4px;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .campus-switcher button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #333;
+            background-color: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
+            transition: color 0.3s ease;
+        }
+
+        .campus-switcher button.active {
+            color: #fff;
+        }
+
+        /* 滑块样式 */
+        .campus-switcher .slider {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            height: calc(100% - 8px);
+            background-color: #007bff;
+            border-radius: 6px;
+            transition: left 0.3s ease, width 0.3s ease;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部栏 -->
+    <div class="top-bar">
+        <!-- 用户信息 -->
+        <div class="user-profile">
+            <img src="static/image/user-avatar.png" alt="用户头像">
+            <div>
+                <h5>1</h5>
+                <p>遇见美好的一天</p>
+            </div>
+        </div>
+        <!-- 操作按钮 -->
+        <div class="action-buttons">
+            <div class="action-button">通知</div>
+            <div class="action-button">设置</div>
+        </div>
+    </div>
+    <div class="container py-5">
+        
+        <h3 class="text-center mb-4">天气预报</h3>
+        <div class="weather-container" id="weather-info">
+            <!-- 天气信息动态渲染 -->
+        </div>
+        <h3 class="text-center mb-4">🏟 复旦邯郸体育场馆位置查询</h3>
+        <!-- <div class="title">🏟 复旦邯郸体育场馆位置查询</div> -->
+        <!-- 校区切换横条 -->
+        <!-- 校区切换横条 -->
+        <div class="campus-switcher">
+            <button class="active" data-campus="handan">邯郸校区</button>
+            <button data-campus="jiangwan">江湾校区</button>
+            <button data-campus="fenglin">枫林校区</button>
+            <button data-campus="zhangjiang">张江校区</button>
+            <div class="slider"></div>
+        </div>
+        <div id="map-container">
+            <div id="container" style="width: 100%; height: 100%;"></div>
+        </div>
+
+        <div class="info-box">
+            <h3>📍 位置信息</h3>
+            <p>点击地图上的标记点，可以查看该地点的详细信息。</p>
+            <p>包含地点名称、地址等信息。</p>
+        </div>
+        <!-- AI 对话框 -->
+        <div class="chat-container" id="chat-container">
+            <header>
+                Kimi ChatBot
+                <button class="close-btn" onclick="toggleChat()">×</button>
+            </header>
+            <div class="messages" id="messages"></div>
+            <div class="input-container">
+                <input type="text" id="userInput" placeholder="请输入内容..." />
+                <button onclick="sendMessage()">对话</button>
+            </div>
+        </div>
+
+        <!-- 打开 AI 对话框的按钮 -->
+        <button class="chat-toggle-btn" onclick="toggleChat()">💬</button>
+    </div>
+
+    <script>
+        // 天气数据逻辑
+        const apiKey = 'SNFr0qpRbC-X8mDx_'; 
+        const apiUrl = `https://api.seniverse.com/v3/weather/daily.json?key=${apiKey}&location=shanghai&language=zh-Hans&unit=c&start=-1&days=5`;
+
+        async function fetchWeather() {
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                return data.results[0].daily;
+            } catch (error) {
+                console.error('获取天气数据失败:', error);
+                return [];
+            }
+        }
+
+        function getWeatherIcon(condition) {
+            const icons = {
+                '晴': 'wb_sunny',
+                '多云': 'cloud',
+                '小雨': 'umbrella',
+                '中雨': 'flash_on',
+                '雪': 'ac_unit',
+            };
+            return icons[condition] || 'cloud_queue';
+        }
+        function getWeatherBackground(condition) {
+            const backgrounds = {
+                '晴': 'static/image/weather/sunny.webp',
+                '多云': 'static/image/weather/cloudy.jpeg',
+                '小雨': 'static/image/weather/rainy.png',
+                '中雨': 'static/image/weather/thunder.jpeg',
+                '雪': 'static/image/weather/snowy.jpeg',
+                '阴' : 'static/image/weather/yin.jpeg',
+            };
+            return backgrounds[condition] || 'static/images/weather/default.jpg';
+        }
+
+        function renderWeather(dailyData) {
+            const weatherInfo = document.getElementById('weather-info');
+            weatherInfo.innerHTML = '';
+            dailyData.forEach(day => {
+                const weatherCard = document.createElement('div');
+                weatherCard.className = 'weather-card fade-in';
+                weatherCard.innerHTML = `
+                    <div class="day-section">
+                        <div class="weather-icon">
+                            <i class="material-icons">${getWeatherIcon(day.text_day)}</i>
+                        </div>
+                        <h5>${day.date} 白天</h5>
+                        <p>${day.text_day}</p>
+                        <p class="temp"><span class="high">${day.high}°C</span></p>
+                    </div>
+                    <div class="night-section">
+                        <div class="weather-icon">
+                            <i class="material-icons">${getWeatherIcon(day.text_night)}</i>
+                        </div>
+                        <h5>${day.date} 晚上</h5>
+                        <p>${day.text_night}</p>
+                        <p class="temp"><span class="low">${day.low}°C</span></p>
+                    </div>
+                `;
+                weatherInfo.appendChild(weatherCard);
+            });
+        }
+
+        async function initWeather() {
+            const dailyData = await fetchWeather();
+            if (dailyData.length > 0) {
+                renderWeather(dailyData);
+            } else {
+                document.getElementById('weather-info').innerHTML = '<p class="text-muted">无法获取天气数据</p>';
+            }
+        }
+        // AI 对话框逻辑
+        function toggleChat() {
+            const chatContainer = document.getElementById('chat-container');
+            if (chatContainer.style.display === 'none' || chatContainer.style.display === '') {
+                chatContainer.style.display = 'flex';
+            } else {
+                chatContainer.style.display = 'none';
+            }
+        }
+
+        async function sendMessage() {
+            const userInput = document.getElementById('userInput').value;
+            if (!userInput.trim()) return;
+
+            const messagesContainer = document.getElementById('messages');
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.classList.add('message', 'user-message');
+            userMessageDiv.textContent = userInput;
+            messagesContainer.appendChild(userMessageDiv);
+
+            document.getElementById('userInput').value = '';
+
+            const waitingMessageDiv = document.createElement('div');
+            waitingMessageDiv.classList.add('waiting-message');
+            waitingMessageDiv.textContent = '...';
+            messagesContainer.appendChild(waitingMessageDiv);
+
+            try {
+                const response = await fetch('http://localhost:3000/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: userInput })
+                });
+                const data = await response.json();
+
+                const botMessageDiv = document.createElement('div');
+                botMessageDiv.classList.add('message', 'bot-message');
+                botMessageDiv.textContent = data.reply;
+
+                messagesContainer.replaceChild(botMessageDiv, waitingMessageDiv);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        document.getElementById('userInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', initWeather);
+    </script>
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=e222f90f48b5d285c55a5b498e4d0ba3&plugin=AMap.PlaceSearch"></script>
+    <script type="text/javascript">
+        var lnglat = new AMap.LngLat(121.50325, 31.2977);
+        var map = new AMap.Map("map-container", {
+            resizeEnable: true,
+            center: lnglat,
+            zoom: 15
+        });
+
+        AMap.plugin('AMap.MapType', function() {
+            var toolbar = new AMap.MapType();
+            map.addControl(toolbar);
+        });
+
+        function addMarkerWithInfoWindow(location, name, address) {
+            var endIcon = new AMap.Icon({
+                image: 'https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png',
+                size: new AMap.Size(100, 60),
+                offset: new AMap.Pixel(-80, -60),
+            });
+
+            var marker = new AMap.Marker({
+                map: map,
+                icon: endIcon,
+                position: location,
+                offset: new AMap.Pixel(-80, -60)
+            });
+
+            var infoWindow = new AMap.InfoWindow({
+                autoMove: true,
+                offset: { x: 25, y: -10 }
+            });
+
+            var content = createContent({ name: name, address: address });
+
+            marker.on('click', function() {
+                infoWindow.setContent(content);
+                infoWindow.open(map, location);
+            });
+
+            function createContent(poi) {
+                var s = [];
+                s.push("<b>名称：" + poi.name + "</b>");
+                s.push("地址：" + poi.address);
+                return s.join("<br>");
+            }
+        }
+
+        addMarkerWithInfoWindow([121.5036, 31.29267], "正大体育馆", "上海市浦东新区陆家嘴环路1288号");
+        addMarkerWithInfoWindow([121.49572, 31.30086], "北区体育馆", "上海市浦东新区陆家嘴环路1288号");
+        addMarkerWithInfoWindow([121.50764, 31.29665], "邯郸路田径场", "上海市浦东新区陆家嘴环路1288号");
+        addMarkerWithInfoWindow([121.50324, 31.29144], "南区田径场", "上海市浦东新区陆家嘴环路1288号");
+
+
+         // 校区切换逻辑
+        const switcher = document.querySelector('.campus-switcher');
+        const buttons = document.querySelectorAll('.campus-switcher button');
+        const slider = document.querySelector('.campus-switcher .slider');
+
+        buttons.forEach((button, index) => {
+            button.addEventListener('click', () => {
+                // 移除所有按钮的 active 类
+                buttons.forEach(btn => btn.classList.remove('active'));
+                // 为当前点击的按钮添加 active 类
+                button.classList.add('active');
+                // 计算滑块的位置和宽度
+                const buttonWidth = button.offsetWidth;
+                const buttonLeft = button.offsetLeft;
+                slider.style.width = `${buttonWidth}px`;
+                slider.style.left = `${buttonLeft}px`;
+                // 获取校区名称
+                const campus = button.getAttribute('data-campus');
+                console.log(`切换到校区：${campus}`);
+                // 这里可以添加切换地图的逻辑
+            });
+        });
+
+        // 初始化滑块位置
+        const activeButton = document.querySelector('.campus-switcher button.active');
+        if (activeButton) {
+            slider.style.width = `${activeButton.offsetWidth}px`;
+            slider.style.left = `${activeButton.offsetLeft}px`;
+        }
+
+    </script>
+</body>
+</html>

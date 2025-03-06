@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>蚂蚁森林</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #e3f2fd 0%, #bbdefb 100%);
+            position: relative;
+            overflow-x: hidden;
+            margin: 0; 
+        }
+
+        .tree-container {
+            position: relative;
+            display: flex;
+            flex: 1;
+            justify-content: center;
+            align-items: center; 
+            margin-top: 5vh; 
+            padding-bottom: 40px; 
+        }
+
+        .tree-img {
+            max-height: 1000px; 
+            transition: all 0.5s;
+            transform: scale(1.5); /* 轻微放大，1.1 表示放大 10% */
+        }
+
+        .waterdrops-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .waterdrop {
+            width: 60px;
+            height: 60px;
+            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M50 5c-15 25-30 40-30 60 0 20 15 35 30 35s30-15 30-35c0-20-15-35-30-60z" fill="%2344B3FF"/></svg>');
+            background-size: cover;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s;
+            position: absolute;
+            pointer-events: auto;
+            animation: float 2.5s ease-in-out infinite;
+            filter: drop-shadow(0 5px 8px rgba(68, 179, 255, 0.3));
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(-5deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+        }
+
+        .progress-container {
+            padding: 20px;
+            background: #f8f9fa;
+            margin-top: auto; 
+        }
+
+        .progress {
+            height: 30px;
+            border-radius: 15px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+            background: linear-gradient(45deg, #4CAF50, #81C784);
+            font-size: 14px;
+            letter-spacing: 1px;
+            transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .deco-cloud {
+            position: absolute;
+            width: 150px;
+            height: 60px;
+            background: white;
+            border-radius: 40px;
+            animation: cloudMove 20s linear infinite;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.05));
+        }
+
+        @keyframes cloudMove {
+            from { left: -20%; }
+            to { left: 120%; }
+        }
+
+        .water-particle {
+            width: 12px;
+            height: 12px;
+            background: rgba(68, 179, 255, 0.8);
+            position: absolute;
+            border-radius: 50%;
+            animation: particle 1s ease-out forwards;
+        }
+        /* 吉祥物容器 */
+        .mascot-container {
+            display: flex; /* 使用 Flexbox */
+            justify-content: flex-start; /* 水平靠左 */
+            align-items: flex-end; /* 垂直靠底部 */
+            height: 100%; /* 占满全高 */
+            position: relative;
+            padding-left: 750px; /* 添加左边距以移动到稍左位置 */
+        }
+
+        /* 吉祥物图片 */
+        .mascot {
+            margin-bottom: 10%; /* 根据需要调整底部间距 */
+            margin-top: 20px; /* 根据需要添加上边距 */
+            width: 180px; /* 将宽度变为原来的约 2 倍 */
+            height: 260px; /* 将高度变为原来的约 2 倍 */
+        }
+
+        .mascot:hover {
+            transform: scale(1.1);
+        }
+
+        @keyframes particle {
+            0% { transform: scale(1); opacity: 1; }
+            100% { 
+                transform: 
+                    translate(
+                        calc((Math.random() - 0.5) * 100px),
+                        calc((Math.random() - 1) * 150px)
+                    )
+                    scale(0);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="deco-cloud"></div>
+    <div class="deco-birds"></div>
+
+    <div class="tree-container">
+        <img id="tree" class="tree-img" src="">
+        <div id="waterdrops" class="waterdrops-container"></div>
+    </div>
+
+    <!-- 吉祥物图片 -->
+    <div class="mascot-container">
+        <img src="static/image/mascot.png" alt="吉祥物" class="mascot" onclick="toggleChat()" />
+    </div>
+    <div id="chat-container">
+        <div id="messages"></div>
+        <input type="text" id="userInput" placeholder="输入消息...">
+        <button id="sendButton" onclick="sendMessage()">发送</button>
+    </div>
+
+    <div class="progress-container">
+        <div class="progress">
+            <div id="progressBar" class="progress-bar bg-success" role="progressbar"></div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化
+        async function init() {
+            const loader = document.createElement('lottie-player');
+            loader.src = 'https://assets1.lottiefiles.com/packages/lf20_raiw2hpe.json';
+            loader.style.width = '200px';
+            loader.style.margin = 'auto';
+            document.body.prepend(loader);
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('Id');
+
+            if (!userId) {
+                alert("缺少用户ID");
+                return;
+            }
+
+            const user = await getUserData(userId);
+            if (!user) {
+                alert("用户不存在");
+                return;
+            }
+
+            loader.remove();
+            updateTree(user.credit);
+            updateProgress(user.credit);
+            createWaterdrops(user.activity, user);
+        }
+
+        // 获取用户数据
+        async function getUserData(userId) {
+            try {
+                const response = await fetch(`/get_user_data?id=${userId}`);
+                if (!response.ok) throw new Error('用户数据获取失败');
+                return await response.json();
+            } catch (error) {
+                console.error(error);
+                return null;
+            }
+        }
+
+        // 更新树形态
+        function updateTree(credit) {
+            const treeImg = document.getElementById('tree');
+            let imgUrl;
+            
+            if (credit < 20) {
+                imgUrl = 'static/image/exampletree1.jpg'; 
+            } else if (credit < 40) {
+                imgUrl = 'static/image/exampletree2.jpg';
+            } else {
+                imgUrl = 'static/image/exampletree3.png';
+            }
+            
+            treeImg.src = imgUrl;
+        }
+
+        // 更新进度条
+        function updateProgress(credit) {
+            const progress = (credit / 50) * 100;
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = `${progress}%`;
+            progressBar.innerHTML = `${credit}/50 积分`;
+        }
+
+        // 创建水滴
+        function createWaterdrops(activityCount, user) {
+            const container = document.getElementById('waterdrops');
+            container.innerHTML = '';
+            
+            const treeHeight = document.getElementById('tree').clientHeight;
+
+            for (let i = 0; i < activityCount; i++) {
+                const x = (Math.random() - 0.5) * 400;
+                const y = (Math.random() - 0.5) * 300 - 100;
+
+                const drop = document.createElement('div');
+                drop.className = 'waterdrop';
+                drop.innerHTML = '5积分';
+                drop.style.left = `calc(50% + ${x}px)`;
+                drop.style.top = `calc(40% + ${y}px + ${treeHeight * 0.05}px)`; // 水滴调低
+                drop.style.setProperty('--delay', Math.random() * 2);
+
+                drop.addEventListener('click', async (event) => {
+                    try {
+                        const response = await fetch('/update_credit', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({userId: user.id}),
+                        });
+
+                        if (!response.ok) throw new Error('积分更新失败');
+
+                        const result = await response.json();
+                        user.credit = result.newCredit;
+
+                        const particles = 5;
+                        for(let i=0; i<particles; i++){
+                            const particle = document.createElement('div');
+                            particle.className = 'water-particle';
+                            particle.style.left = `${event.clientX}px`;
+                            particle.style.top = `${event.clientY}px`;
+                            document.body.appendChild(particle);
+                            setTimeout(() => particle.remove(), 1000);
+                        }
+
+                        drop.style.transform = 'scale(0)';
+                        setTimeout(() => {
+                            drop.remove();
+                            updateTree(user.credit);
+                            updateProgress(user.credit);
+                        }, 300);
+                    } catch (error) {
+                        console.error(error);
+                        alert('积分更新失败');
+                    }
+                });
+
+                container.appendChild(drop);
+            }
+        }
+
+        // 页面加载时初始化
+        window.onload = init;
+        function toggleChat() {
+            const chatContainer = document.getElementById('chat-container');
+            chatContainer.style.display = (chatContainer.style.display === 'none' || chatContainer.style.display === '') ? 'flex' : 'none';
+        }
+
+        async function sendMessage() {
+            const userInput = document.getElementById('userInput').value.trim();
+            if (!userInput) return;
+
+            const messagesContainer = document.getElementById('messages');
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.classList.add('message', 'user-message');
+            userMessageDiv.textContent = userInput;
+            messagesContainer.appendChild(userMessageDiv);
+
+            document.getElementById('userInput').value = '';
+
+            const waitingMessageDiv = document.createElement('div');
+            waitingMessageDiv.classList.add('waiting-message');
+            waitingMessageDiv.textContent = '...';
+            messagesContainer.appendChild(waitingMessageDiv);
+
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            try {
+                const response = await fetch('http://localhost:3000/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: userInput })
+                });
+                const data = await response.json();
+
+                const botMessageDiv = document.createElement('div');
+                botMessageDiv.classList.add('message', 'bot-message');
+                botMessageDiv.textContent = data.reply;
+
+                messagesContainer.replaceChild(botMessageDiv, waitingMessageDiv);
+            } catch (error) {
+                console.error('Error:', error);
+                waitingMessageDiv.textContent = 'AI 连接失败';
+            }
+
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        document.getElementById('userInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
